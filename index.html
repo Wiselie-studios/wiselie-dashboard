@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wiselie HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #090909;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: rgba(245,245,245,0.07);
+    --text: #F5F5F5;
+    --text-dim: rgba(245,245,245,0.32);
+    --text-mid: rgba(245,245,245,0.58);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.5;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    padding: 36px 56px 28px;
+    gap: 0;
+  }
+
+  /* ── TOP BAR ── */
+  .top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 32px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-wrap img {
+    height: 28px;
+    width: auto;
+    display: block;
+    opacity: 0.92;
+  }
+
+  /* ── FLIP CLOCK ── */
+  .clock-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .flip-clock {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* Each digit card */
+  .digit {
+    width: 52px;
+    height: 72px;
+    position: relative;
+    perspective: 400px;
+    font-family: 'DM Mono', monospace;
+    font-size: 46px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  /* static card face (always visible) */
+  .digit-face {
+    position: absolute;
+    inset: 0;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* fold line */
+  .digit-face::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(0,0,0,0.55);
+    z-index: 2;
+  }
+
+  /* top half darker */
+  .digit-face::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 50% 0;
+    background: rgba(0,0,0,0.15);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* the flip panel — top half flips down */
+  .digit-flap {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 50%;
+    transform-origin: bottom center;
+    transform-style: preserve-3d;
+    z-index: 10;
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+  }
+
+  .digit-flap {
+    opacity: 0;
+  }
+
+  .digit-flap.animate {
+    opacity: 1;
+    animation: flipDown 0.35s ease-in-out forwards;
+  }
+
+  @keyframes flipDown {
+    0%   { transform: rotateX(0deg); opacity: 1; }
+    100% { transform: rotateX(-90deg); opacity: 0; }
+  }
+
+  /* flap face (shows old top digit during flip) */
+  .digit-flap-face {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding-bottom: -36px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+  }
+
+  .digit-flap-face span {
+    position: absolute;
+    bottom: -36px;
+    font-family: 'DM Mono', monospace;
+    font-size: 46px;
+    font-weight: 500;
+    color: var(--text);
+    transform: translateY(-50%);
+  }
+
+  .colon {
+    font-family: 'DM Mono', monospace;
+    font-size: 40px;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1;
+    margin: 0 12px;
+    animation: colonBlink 1s step-end infinite;
+    align-self: center;
+    margin-bottom: 4px;
+  }
+
+  @keyframes colonBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.1; }
+  }
+
+  .clock-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── DAY INFO ── */
+  .day-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+
+  .day-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--text-mid);
+    text-transform: uppercase;
+  }
+
+  .day-mode {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+
+  /* ── LINKS ── */
+  .links-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    padding: 28px 0;
+  }
+
+  .links-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .links-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .category-group {
+    margin-bottom: 20px;
+  }
+
+  .category-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .category-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .link-card {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-mid);
+    font-family: 'Geist', sans-serif;
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+  }
+
+  .link-card:hover {
+    background: var(--surface2);
+    border-color: rgba(245,245,245,0.14);
+    color: var(--text);
+    transform: translateY(-1px);
+  }
+
+  .link-icon {
+    width: 14px; height: 14px;
+    opacity: 0.45;
+    flex-shrink: 0;
+    transition: opacity 0.12s;
+  }
+  .link-card:hover .link-icon { opacity: 0.8; }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .bottom-phrase {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    font-style: italic;
+    text-transform: uppercase;
+  }
+
+  .day-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .day-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(245,245,245,0.1);
+  }
+  .day-dot.active { background: var(--text); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .layout { animation: fadeUp 0.45s ease both; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- TOP BAR -->
+  <div class="top">
+    <div class="logo-wrap">
+      <img id="logo-img" alt="Wiselie Studios">
+    </div>
+
+    <div class="clock-wrap">
+      <div class="flip-clock" id="flip-clock"></div>
+      <div class="clock-date" id="clock-date"></div>
+    </div>
+
+    <div class="day-info">
+      <div class="day-name" id="day-name"></div>
+      <div class="day-mode" id="day-mode"></div>
+    </div>
+  </div>
+
+  <!-- LINKS -->
+  <div class="links-section">
+    <div class="links-label" id="links-label">Quick Access</div>
+    <div class="links-grid" id="links-grid"></div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottom-bar">
+    <div class="bottom-phrase" id="daily-phrase"></div>
+    <div class="day-dots" id="day-dots"></div>
+  </div>
+
+</div>
+
+<script>
+// ── LOGO ────────────────────────────────────────────────────────────────────────
+document.getElementById('logo-img').src = 'assets/Wiselie_White_v2.png';
+
+// ── DAY CONFIG ────────────────────────────────────────────────────────────────
+const DAYS = {
+  0: {
+    name: 'SUNDAY', mode: 'Rest Day', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  1: {
+    name: 'MONDAY', mode: 'Admin Day', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  2: {
+    name: 'TUESDAY', mode: 'Creative Session', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  3: {
+    name: 'WEDNESDAY', mode: 'Creative Session', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  4: {
+    name: 'THURSDAY', mode: 'Creative Session', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  5: {
+    name: 'FRIDAY', mode: 'Music Day', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  },
+  6: {
+    name: 'SATURDAY', mode: 'Flow / Catch-up', label: '',
+    phrase: 'Create Like It Matters ™',
+    links: {
+      'Google Workspace': [
+        { label: 'Gmail',          href: 'https://mail.google.com/mail/u/0/#inbox', icon: 'mail' },
+        { label: 'Google Drive',   href: 'https://drive.google.com/drive/u/0/my-drive', icon: 'folder' },
+        { label: 'Google Docs',    href: 'https://docs.google.com', icon: 'file-text' },
+        { label: 'Google Sheets',  href: 'https://sheets.google.com', icon: 'table' },
+        { label: 'Google Calendar', href: 'https://calendar.google.com/calendar/u/0/r', icon: 'calendar' },
+        { label: 'NotebookLM',     href: 'https://notebooklm.google.com/?utm_source=app_launcher&utm_medium=referral&authuser=0&pli=1', icon: 'book' },
+      ],
+      'Studios Tech Stack': [
+        { label: 'Studio Client Portal', href: 'https://client.wiselie.co/login', icon: 'globe' },
+        { label: 'Notion',         href: 'https://notion.so', icon: 'grid' },
+        { label: 'Vimeo',          href: 'https://vimeo.com/michaeljonesjr', icon: 'video' },
+        { label: 'Pinterest',      href: 'https://www.pinterest.com/MichaelJunyer/', icon: 'image' },
+        { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play' },
+        { label: 'Pixieset',       href: 'https://pixieset.com', icon: 'image' },
+        { label: 'Coolors',        href: 'https://coolors.co', icon: 'aperture' },
+      ],
+      'Finance': [
+        { label: 'Sequence', href: 'https://getsequence.io', icon: 'dollar' },
+        { label: 'Stripe',   href: 'https://stripe.com', icon: 'credit-card' },
+        { label: 'Novo',     href: 'https://novo.co', icon: 'briefcase' },
+      ],
+      'Social Links': [
+        { label: 'Instagram (Personal)', href: 'https://instagram.com/michaeljunyer', icon: 'camera' },
+        { label: 'Instagram (Wiselie)',  href: 'https://instagram.com/wiselie.co', icon: 'camera' },
+        { label: 'Instagram (Studios)',  href: 'https://instagram.com/wiselie.studios', icon: 'camera' },
+        { label: 'Instagram (Weddings)', href: 'https://instagram.com/weddingsbywiselie', icon: 'camera' },
+        { label: 'YouTube',              href: 'https://www.youtube.com/@michaeljunyer', icon: 'play' },
+        { label: 'LinkedIn',             href: 'https://linkedin.com/in/michaeljunyer', icon: 'briefcase' },
+      ],
+      'Dev Tools': [
+        { label: 'Vercel',     href: 'https://vercel.com', icon: 'triangle' },
+        { label: 'Lovable',    href: 'https://lovable.dev', icon: 'code' },
+        { label: 'GitHub',     href: 'https://github.com', icon: 'terminal' },
+        { label: 'Cloudinary', href: 'https://cloudinary.com', icon: 'cloud' },
+        { label: 'Cloudflare', href: 'https://cloudflare.com', icon: 'cloudflare' },
+        { label: 'Relume',     href: 'https://relume.io', icon: 'layout' },
+      ],
+    }
+  }
+};
+
+// ── ICONS ─────────────────────────────────────────────────────────────────────
+const ICONS = {
+  mail:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 4l10 9 10-9"/></svg>`,
+  folder:     `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>`,
+  'file-text':`<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>`,
+  table:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>`,
+  calendar:   `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  grid:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
+  video:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3V10z"/></svg>`,
+  briefcase:  `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>`,
+  dollar:     `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
+  users:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
+  camera:     `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>`,
+  play:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`,
+  image:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`,
+  aperture:   `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="14.31" y1="8" x2="20.05" y2="17.94"/><line x1="9.69" y1="8" x2="21.17" y2="8"/><line x1="7.38" y1="12" x2="13.12" y2="2.06"/><line x1="9.69" y1="16" x2="3.95" y2="6.06"/><line x1="14.31" y1="16" x2="2.83" y2="16"/><line x1="16.62" y1="12" x2="10.88" y2="21.94"/></svg>`,
+  film:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M17 7h5M2 17h5M17 17h5"/></svg>`,
+  'pen-tool': `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`,
+  code:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  triangle:   `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+  terminal:   `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+  layout:     `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`,
+  music:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+  headphones: `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>`,
+  send:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  radio:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49M7.76 16.24a6 6 0 010-8.49M20.49 3.51a12 12 0 010 16.97M3.51 20.49a12 12 0 010-16.97"/></svg>`,
+  zap:        `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  book:       `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`,
+  'credit-card': `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+  cloud:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+  cloudflare: `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/></svg>`,
+  globe:      `<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+};
+
+// ── FLIP CLOCK ────────────────────────────────────────────────────────────────
+// Bulletproof approach: each digit is a container with a visible number.
+// On change, we animate a "flap" that covers the top half and folds away.
+
+const digitIds = ['h1','h2','m1','m2','s1','s2'];
+const digitEls = {}; // stores { face, flap, flapSpan }
+let prevVals = {};
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function buildClock() {
+  const clock = document.getElementById('flip-clock');
+  clock.innerHTML = '';
+
+  digitIds.forEach((id, i) => {
+    // Add colon separators
+    if (i === 2 || i === 4) {
+      const col = document.createElement('div');
+      col.className = 'colon';
+      col.textContent = ':';
+      clock.appendChild(col);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'digit';
+    wrap.id = 'digit-' + id;
+
+    // Static face (shows current number always)
+    const face = document.createElement('div');
+    face.className = 'digit-face';
+    const faceSpan = document.createElement('span');
+    faceSpan.style.cssText = 'font-family:"DM Mono",monospace;font-size:46px;font-weight:500;line-height:1;';
+    faceSpan.textContent = '0';
+    face.appendChild(faceSpan);
+
+    // Flap (animated top half, shows OLD number during flip)
+    const flap = document.createElement('div');
+    flap.className = 'digit-flap';
+    const flapFace = document.createElement('div');
+    flapFace.className = 'digit-flap-face';
+    const flapSpan = document.createElement('span');
+    flapSpan.style.cssText = 'font-family:"DM Mono",monospace;font-size:46px;font-weight:500;line-height:1;';
+    flapSpan.textContent = '0';
+    flapFace.appendChild(flapSpan);
+    flap.appendChild(flapFace);
+
+    wrap.appendChild(face);
+    wrap.appendChild(flap);
+    clock.appendChild(wrap);
+
+    digitEls[id] = { faceSpan, flap, flapSpan };
+    prevVals[id] = '';
+  });
+}
+
+function flipDigit(id, newVal) {
+  const el = digitEls[id];
+  if (!el) return;
+
+  const oldVal = prevVals[id];
+
+  // Show old value on flap, new value on face
+  el.flapSpan.textContent = oldVal;
+  el.faceSpan.textContent = newVal;
+
+  // Animate the flap folding down
+  el.flap.classList.remove('animate');
+  void el.flap.offsetWidth; // reflow
+  el.flap.classList.add('animate');
+
+  prevVals[id] = newVal;
+}
+
+function setDigit(id, val) {
+  const el = digitEls[id];
+  if (!el) return;
+  el.faceSpan.textContent = val;
+  el.flapSpan.textContent = val;
+  prevVals[id] = val;
+}
+
+function tickClock() {
+  const now = new Date();
+  let h = now.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+
+  const hS = pad(h), mS = pad(m), sS = pad(s);
+  const vals = { h1: hS[0], h2: hS[1], m1: mS[0], m2: mS[1], s1: sS[0], s2: sS[1] };
+
+  digitIds.forEach(id => {
+    if (prevVals[id] !== vals[id]) {
+      flipDigit(id, vals[id]);
+    }
+  });
+
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clock-date').textContent =
+    `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · ${ampm}`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  buildClock();
+
+  const now = new Date();
+  const dow = now.getDay();
+  const cfg = DAYS[dow];
+
+  // Set initial digits without animation
+  let h = now.getHours() % 12 || 12;
+  const hS = pad(h), mS = pad(now.getMinutes()), sS = pad(now.getSeconds());
+  setDigit('h1', hS[0]); setDigit('h2', hS[1]);
+  setDigit('m1', mS[0]); setDigit('m2', mS[1]);
+  setDigit('s1', sS[0]); setDigit('s2', sS[1]);
+
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clock-date').textContent =
+    `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · ${ampm}`;
+
+  // Day info
+  document.getElementById('day-name').textContent = cfg.name;
+  document.getElementById('day-mode').textContent = cfg.mode.toUpperCase();
+  document.getElementById('links-label').textContent = cfg.label;
+  document.getElementById('daily-phrase').textContent = cfg.phrase;
+
+  // Links
+  const grid = document.getElementById('links-grid');
+  const categoryOrder = ['Google Workspace', 'Studios Tech Stack', 'Dev Tools', 'Finance', 'Social Links'];
+  categoryOrder.forEach(category => {
+    const links = cfg.links[category];
+    if (!links || links.length === 0) return;
+    
+    const categoryGroup = document.createElement('div');
+    categoryGroup.className = 'category-group';
+    
+    const categoryHeader = document.createElement('div');
+    categoryHeader.className = 'category-header';
+    categoryHeader.textContent = category;
+    categoryGroup.appendChild(categoryHeader);
+    
+    const linksGrid = document.createElement('div');
+    linksGrid.className = 'links-grid';
+    
+    links.forEach(link => {
+      const a = document.createElement('a');
+      a.className = 'link-card';
+      a.href = link.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.innerHTML = (ICONS[link.icon] || '') + link.label;
+      linksGrid.appendChild(a);
+    });
+    
+    categoryGroup.appendChild(linksGrid);
+    grid.appendChild(categoryGroup);
+  });
+
+  // Day dots
+  const dotsEl = document.getElementById('day-dots');
+  ['S','M','T','W','T','F','S'].forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'day-dot' + (i === dow ? ' active' : '');
+    dotsEl.appendChild(d);
+  });
+
+  setInterval(tickClock, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
